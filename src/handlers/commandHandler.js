@@ -9,7 +9,12 @@ module.exports = (client) => {
     const files = fs.readdirSync(`./src/commands/${folder}`);
     for (const file of files) {
       const command = require(`../commands/${folder}/${file}`);
-      client.commands.set(command.name, command);
+
+      if (command.data && command.data.name) {
+        client.commands.set(command.data.name, command);
+      } else if (command.name) {
+        client.commands.set(command.name, command);
+      }
     }
   }
 };
