@@ -1,64 +1,97 @@
-const { SlashCommandBuilder, PermissionsBitField } = require('discord.js');
-const { createViolation } = require('./addViolation');
+const fs = require('fs');
+const path = require('path');
+const {
+  SlashCommandBuilder,
+  PermissionFlagsBits
+} = require('discord.js');
 
+const violationsPath = path.resolve(__dirname, '../../utils/violations.json');
+
+// ─────────────────────────────
+// دوال المساعدة
+// ─────────────────────────────
+function loadViolations() {
+  if (!fs.existsSync(violationsPath)) return [];
+  return JSON.parse(fs.readFileSync(violationsPath, 'utf8'));
+}
+
+function saveViolations(data) {
+  // فقط إضافة عنصر جديد بدون تغيير العناصر السابقة
+  fs.writeFileSync(
+    violationsPath,
+    JSON.stringify(data, null, 2),
+    'utf8'
+  );
+}
+
+function generateId(name) {
+  // تبقي ID نفس الاسم أو يمكن تحويل الفراغات ل _
+  return name.toLowerCase().replace(/\s+/g, '_');
+}
+
+// ─────────────────────────────
+// أمر السلاش
+// ─────────────────────────────
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('addviolation')
-    .setDescription('إضافة مخالفة جديدة')
+    .setName('اضافة_مخالفة')
+    .setDescription('إضافة مخالفة جديدة إلى النظام')
     .addStringOption(option =>
       option
-        .setName('name')
+        .setName('الاسم')
         .setDescription('اسم المخالفة')
         .setRequired(true)
     )
     .addIntegerOption(option =>
       option
-        .setName('fine')
-        .setDescription('سعر المخالفة')
+        .setName('السعر')
+        .setDescription('قيمة الغرامة')
         .setRequired(true)
-    ),
+        .setMinValue(1)
+    )
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction) {
-    // تحقق من صلاحية Administrator
-    if (!interaction.memberPermissions.has(PermissionsBitField.Flags.Administrator)) {
-      return interaction.reply({
-        content: '❌ هذا الأمر مخصص للأدمن فقط.',
-        ephemeral: true
-      });
-    }
-
-    const name = interaction.options.getString('name');
-    const fine = interaction.options.getInteger('fine');
-
-    // تحقق إضافي
-    if (fine <= 0) {
-      return interaction.reply({
-        content: '❌ سعر المخالفة يجب أن يكون رقمًا أكبر من 0.',
-        ephemeral: true
-      });
-    }
-
     try {
-      const result = await createViolation(name, fine);
+      console.log('ADD VIOLATION COMMAND FIRED');
 
-      if (!result) {
-        return interaction.reply({
-          content: '❌ فشل في إضافة المخالفة (قد يكون الاسم مكرر).',
-          ephemeral: true
-        });
+      await interaction.deferReply({ flags: 64 });
+
+      const name = interaction.options.getString('الاسم');
+      const fine = interaction.options.getInteger('السعر');
+
+      const violations = loadViolations();
+      const id = generateId(name);
+
+      // منع التكرار
+      if (violations.some(v => v.id === id)) {
+        return interaction.editReply(
+          '❌ هذه المخالفة موجودة مسبقًا'
+        );
       }
 
-      return interaction.reply({
-        content: `✅ تم إضافة المخالفة بنجاح:\n📌 الاسم: **${name}**\n💰 السعر: **${fine}**`,
-        ephemeral: true
-      });
+      // ➕ إضافة مخالفة جديدة فقط، العناصر السابقة تبقى كما هي
+      violations.push({ id, name, fine });
+
+      saveViolations(violations);
+
+      await interaction.editReply(
+        `✅ تم إضافة المخالفة بنجاح\n\n` +
+        `📄 الاسم: **${name}**\n` +
+        `💰 السعر: **${fine}**\n` +
+        `🆔 المعرف: \`${id}\``
+      );
 
     } catch (error) {
-      console.error('AddViolation Error:', error);
-      return interaction.reply({
-        content: '❌ حصل خطأ أثناء تنفيذ الأمر.',
-        ephemeral: true
-      });
+      console.error('ADD VIOLATION ERROR:', error);
+      if (!interaction.replied && !interaction.deferred) {
+        await interaction.reply({
+          content: '❌ حدث خطأ غير متوقع',
+          flags: 64
+        });
+      } else {
+        await interaction.editReply('❌ حدث خطأ غير متوقع');
+      }
     }
   }
 };
