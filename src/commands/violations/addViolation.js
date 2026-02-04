@@ -1,4 +1,3 @@
-const penaltyRoleId = '1468292358293684315'; 
 const {
   EmbedBuilder,
   ActionRowBuilder,
@@ -24,7 +23,8 @@ const allowedRoleIds = [
   '1386689913411469343', // ضع هنا آيدي الرتبة الأولى
   '987654321098765432'  // أضف أو عدل الآيديات حسب الحاجة
 ];
-
+const penaltyRoleId = '1468292358293684315'; 
+//رتبه ممنوع لعب
 module.exports = {
   name: 'مخالفة',
   adminOnly: false,
