@@ -37,5 +37,23 @@ for (const file of events) {
   const event = require(`./src/events/${file}`);
   client.on(event.name, (...args) => event.execute(...args, client));
 }
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const command = client.commands.get(interaction.commandName);
+  if (!command) return;
+
+  try {
+    await command.execute(interaction);
+  } catch (err) {
+    console.error(err);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: '❌ حدث خطأ',
+        ephemeral: true
+      });
+    }
+  }
+});
 
 client.login(process.env.TOKEN);
