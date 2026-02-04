@@ -13,9 +13,12 @@ const { loadDB, saveDB, getUser } = require('../../utils/database');
 const violations = [
   { id: 'speed', name: 'تجاوز السرعة', fine: 500 },
   { id: 'signal', name: 'قطع إشارة', fine: 1000 },
-  { id: 'no_id', name: 'عدم حمل هوية', fine: 300 }
+  { id: 'parking', name: 'مخالفة وقوف خاطئ', fine: 200 },
+  { id: 'wrong_lane', name: 'القيادة في مسار خاطئ', fine: 350 },
+  { id: 'drift', name: 'تفحيط', fine: 3000 },
+  { id: 'no_id', name: 'عدم حمل رخصه', fine: 300 }
+  
 ];
-
 // الرتب المسموح لها استخدام الأمر (بالآيدي)
 const allowedRoleIds = [
   '1386689913411469343', // ضع هنا آيدي الرتبة الأولى
